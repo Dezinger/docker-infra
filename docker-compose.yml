@@ -1,0 +1,75 @@
+version: '3'
+
+services:
+
+    mail:
+        image: schickling/mailcatcher
+        ports:
+            - "1080:1080"
+            - "1025:1025"
+        restart: always
+
+    frontend:
+        image: dezinger/ubuntu-14-nginx
+        ports:
+            - "${NGINX_HOST_HTTP_PORT}:80"
+        environment:
+            - DOCUMENT_ROOT=${DOCUMENT_ROOT}
+            - SERVER_NAME=${SERVER_NAME}
+            - BACKEND_NAME=backend
+        volumes:
+            - ${WWW_PATH}:/var/www
+            - ${FRONTEND_ETC}:/tmp/etc
+        links:
+            - backend
+        depends_on:
+            - backend
+        
+    backend:
+        image: dezinger/ubuntu-14-php-fpm-5.6
+        environment:
+            - GITHUB_OAUTH_KEY=${GITHUB_OAUTH_KEY}
+        volumes:
+            - ${WWW_PATH}:/var/www
+            - ${SSH_KEY_PATH}:/root/.ssh
+            - ${BACKEND_ETC}:/tmp/etc
+        links:
+            - database
+        depends_on:
+            - database           
+            
+    database:
+        image: dezinger/ubuntu-14-postgresql-9.3
+        ports:
+            - "5440:5432"
+        environment:
+            - POSTGRES_DB=${POSTGRES_DB}
+            - POSTGRES_USER=${POSTGRES_USER}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+        volumes:
+            - ${DB_PATH}:/var/lib/postgresql        
+               
+    webdav:
+        image: dezinger/ubuntu-14-webdav
+        ports: 
+            - "8888:80"
+        environment:
+            - SERVER_NAME=${WEBDAV_SERVER_NAME}
+        volumes: 
+            - ${WEBDAV_UPLOAD_PATH}:/var/webdav
+        restart: always            
+    
+    sphinx:
+        image: dezinger/ubuntu-14-sphinxsearch
+        volumes: 
+            - ${SPHINX_ETC}:/tmp/etc
+        restart: always
+        links:
+            - database
+        depends_on:
+            - database
+            
+    memcached:
+        image: dezinger/ubuntu-14-memcached
+        ports:
+            - "11212:11211"

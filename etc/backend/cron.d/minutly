@@ -1,0 +1,2 @@
+
+#* * * * * root php /var/www/cron/minutly.php >> /var/log/cron.log 2>&1
